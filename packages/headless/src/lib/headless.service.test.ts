@@ -186,7 +186,9 @@ describe('headless.service', () => {
       );
     });
 
-    test.skip('when there is no token should call disposeAuthorizationToken', () => {
+    test('does disposeAuthorizationToken when no token present in storage', () => {
+      new HeadlessService(options);
+
       expect(localStorage.getItem).toHaveBeenCalledWith(
         NOTIFICATION_CENTER_TOKEN_KEY
       );
@@ -196,12 +198,14 @@ describe('headless.service', () => {
       );
     });
 
-    test.skip('when there is a token should call setAuthorizationToken', () => {
+    test('does setAuthorizationToken with a token from storage', () => {
       const mockToken = 'mock-token';
       jest.spyOn(Storage.prototype, 'setItem');
       Storage.prototype.getItem = jest
         .fn()
         .mockImplementationOnce(() => mockToken);
+
+      new HeadlessService(options);
 
       expect(mockServiceInstance.setAuthorizationToken).toHaveBeenCalledWith(
         mockToken
