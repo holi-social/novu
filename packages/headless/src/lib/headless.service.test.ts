@@ -215,6 +215,49 @@ describe('headless.service', () => {
         mockToken
       );
     });
+
+    describe('in a client without localStorage support', () => {
+      const { localStorage } = global;
+
+      beforeAll(() => {
+        delete global.localStorage;
+      });
+
+      test('can be called with custom token storage', () => {
+        const mockToken = 'mock-token';
+        const testTokenStorage = {
+          getItem: jest.fn().mockReturnValue('mock-token'),
+          removeItem: jest.fn(),
+          setItem: jest.fn(),
+        };
+
+        new HeadlessService({
+          ...options,
+          tokenStorage: testTokenStorage,
+        });
+
+        expect(mockServiceInstance.setAuthorizationToken).toHaveBeenCalledWith(
+          mockToken
+        );
+        expect(testTokenStorage.setItem).toHaveBeenCalledWith(
+          NOTIFICATION_CENTER_TOKEN_KEY,
+          mockToken
+        );
+      });
+
+      test('throws error when missing tokenStorage option', () => {
+        expect(
+          () =>
+            new HeadlessService({
+              ...options,
+            })
+        ).toThrowError();
+      });
+
+      afterAll(() => {
+        global.localStorage = localStorage;
+      });
+    });
   });
 
   describe('initializeSession', () => {

@@ -41,6 +41,13 @@ export interface IHeadlessServiceOptions {
     retry?: number;
     retryDelay?: number;
   };
+  tokenStorage?: IHeadLessServiceTokenStorage;
+}
+
+export interface IHeadLessServiceTokenStorage {
+  getItem: (key: string) => string | null;
+  setItem: (key: string, value: string) => void;
+  removeItem: (key: string) => void;
 }
 
 export interface IUpdateUserPreferencesVariables {

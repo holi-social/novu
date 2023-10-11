@@ -38,26 +38,19 @@ import {
   IUpdateUserPreferencesVariables,
   IUpdateUserGlobalPreferencesVariables,
   UpdateResult,
+  IHeadLessServiceTokenStorage,
 } from './types';
 
 export const NOTIFICATION_CENTER_TOKEN_KEY = 'nc_token';
-const isBrowser = typeof window !== 'undefined';
 const SESSION_NOT_INITIALIZED_ERROR =
   'Session is not initialized, please use the initializeSession method first';
-
-const getToken = (): string | null => {
-  if (isBrowser) {
-    return localStorage.getItem(NOTIFICATION_CENTER_TOKEN_KEY);
-  }
-
-  return null;
-};
 
 export class HeadlessService {
   private api: ApiService;
   private queryClient: QueryClient = null;
   private queryService: QueryService;
   private session: ISession | null = null;
+  private tokenStorage: IHeadLessServiceTokenStorage;
 
   private socket: {
     on: (event: string, listener: (data?: unknown) => void) => void;
@@ -121,7 +114,18 @@ export class HeadlessService {
 
   constructor(private options: IHeadlessServiceOptions) {
     const backendUrl = options.backendUrl ?? 'https://api.novu.co';
-    const token = getToken();
+    if (options.tokenStorage) {
+      this.tokenStorage = options.tokenStorage;
+    } else {
+      if (typeof localStorage !== 'undefined') {
+        this.tokenStorage = localStorage;
+      } else {
+        throw new Error(
+          'Client does not seem to support localStorage, provide your own storage with the tokenStorage option'
+        );
+      }
+    }
+    const token = this.getToken();
     this.api = new ApiService(backendUrl);
     this.applyToken(token);
 
@@ -151,13 +155,16 @@ export class HeadlessService {
     }
   }
 
+  private getToken(): string {
+    return this.tokenStorage.getItem(NOTIFICATION_CENTER_TOKEN_KEY);
+  }
+
   private applyToken(newToken: string | null) {
     if (newToken) {
-      isBrowser &&
-        localStorage.setItem(NOTIFICATION_CENTER_TOKEN_KEY, newToken);
+      this.tokenStorage.setItem(NOTIFICATION_CENTER_TOKEN_KEY, newToken);
       this.api.setAuthorizationToken(newToken);
     } else {
-      isBrowser && localStorage.removeItem(NOTIFICATION_CENTER_TOKEN_KEY);
+      this.tokenStorage.removeItem(NOTIFICATION_CENTER_TOKEN_KEY);
       this.api.disposeAuthorizationToken();
     }
   }
